@@ -7,7 +7,7 @@
 ## Canlı Bağlantı ve Teslim Bilgileri
 - **Canlı URL:** [https://enteksis.onrender.com](https://enteksis.onrender.com) *(Render üzerine deploy edildikten sonra güncellenecektir)*
 - **Kaynak Kod Deposu:** Bu repo
-- **Teslim Commit Kimliği:** `dd90935` (veya GitHub push sonrası son commit hash'i)
+- **Teslim Commit Kimliği:** `4db0c57`
 
 > **Not (Render Ücretsiz Plan):** Render ücretsiz planında uygulama yaklaşık 15 dakika boyunca istek almadığında uyku moduna (spin-down) geçer. Bu nedenle ilk istekte açılış süresi 30–50 saniye sürebilir (cold start). Sonraki istekler anında yanıtlanır.
 

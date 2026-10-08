@@ -8,7 +8,7 @@
 - **Canlı URL:** [https://enteksis.onrender.com](https://enteksis.onrender.com) 
 - **Kaynak Kod Deposu:** https://github.com/HamzaKetenci/enteksis
 
-> **NOT:** Render ücretsiz planında uygulama yaklaşık 15 dakika boyunca istek almadığında uyku moduna (spin-down) geçer. Bu nedenle ilk istekte açılış süresi 30–50 saniye sürebilir (cold start). Sonraki istekler anında yanıtlanır.
+> **NOT:** Render ücretsiz planında uygulama yaklaşık 15 dakika boyunca istek almadığında uyku moduna (spin-down) geçer. Bu nedenle ilk istekte açılış süresi 30–50 saniye sürebilir. Sonraki istekler anında yanıtlanır.
 
 ---
 

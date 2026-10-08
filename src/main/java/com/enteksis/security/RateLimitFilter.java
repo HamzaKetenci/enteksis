@@ -1,4 +1,4 @@
-package com.enteksis.ratelimit;
+package com.enteksis.security;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;

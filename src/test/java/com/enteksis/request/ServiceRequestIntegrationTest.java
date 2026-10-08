@@ -1,7 +1,7 @@
 package com.enteksis.request;
 
 import java.util.Map;
-import com.enteksis.ratelimit.RateLimitFilter;
+import com.enteksis.security.RateLimitFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

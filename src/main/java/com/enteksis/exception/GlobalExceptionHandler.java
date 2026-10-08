@@ -1,4 +1,4 @@
-package com.enteksis.request;
+package com.enteksis.exception;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

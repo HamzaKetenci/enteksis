@@ -1,107 +1,43 @@
-# AI_LOG.md — AI Geliştirme ve Doğrulama Günlüğü
+# AI_LOG
 
-Bu projeyi Antigravity ile geliştirdim. Claude'u ise danışman ve gözden geçirici olarak kullandım. Bu dosyada hangi kararları verdiğimi, yapay zekayı nasıl yönlendirdiğimi ve sonucun çalıştığını nasıl kontrol ettiğimi anlatıyorum. Yapmadığım hiçbir kontrolü yapılmış gibi yazmadım.
-
----
+Bu projeyi Antigravity ile geliştirdim, Claude'u ise danışman ve gözden geçirici olarak kullandım. Aşağıda nasıl çalıştığımı, yapay zekayı nasıl yönlendirdiğimi, karşılaştığım sorunları ve sonucu nasıl kontrol ettiğimi anlatıyorum.
 
 ## Süre
 
-Çalışma penceresini 7 Ekim 2026'da, yaklaşık 18:40'ta başlattım. Teslim saatim 8 Ekim 2026 10:45, gerçek aktif çalışma sürem ise yaklaşık 3.5 - 4 saat oldu. Pencereyi planladığımdan daha erken başlattığım için ilk kısmı hazırlığa ve karar vermeye ayırdım. Bu kısımda hangi teknolojileri kullanacağıma ve projeyi nerede yayınlayacağıma karar verdim.
+Çalışma penceresini 7 Ekim 2026'da yaklaşık 18:34'te, istemeden erken başlattım. İlk yarım saat teknoloji yığınını, veritabanını ve yayın yerini seçmekle geçti. Gerçek aktif çalışma sürem yaklaşık 3–4 saat oldu.
 
----
+## Araçlar ve çalışma şekli
 
-## Kullandığım araçlar ve görev dağılımı
+Kararları ben verdim, kodu Antigravity yazdı. Claude ile görevi anlamak, teknoloji ve veritabanı seçimini değerlendirmek, Antigravity'ye vereceğim ana prompt'un taslağını hazırlamak ve Antigravity'nin çıkardığı planı gözden geçirmek için çalıştım. Veritabanı olarak Supabase'deki PostgreSQL'i, yayın için Render'ı, kaynak kod için GitHub'ı kullandım.
 
-Kararları ben verdim ve her aşamayı ben onayladım. Kodu Antigravity yazdı. Claude ile ise şu konularda çalıştım: görevi anlamak, teknoloji ve veritabanı seçimlerini değerlendirmek, Antigravity'ye vereceğim ana prompt'un taslağını hazırlamak ve Antigravity'nin çıkardığı mimari planı gözden geçirmek. Ana prompt'un ilk taslağını Claude hazırladı, ben de onu kullandım. Prompt'a Flyway try/catch yönetimi, Honeypot 422 kararı, Supabase RLS etkinleştirme ve 16KB gövde sınırı gibi kendi mimari tercihlerimi ekleyerek Antigravity'ye aktardım.
+Ana prompt'ta Antigravity'den önce kod yazmamasını, yalnızca mimari bir plan çıkarıp onayımı beklemesini, aşama aşama ilerlemesini, Testcontainers çalışmazsa sahte bir veritabanına (H2) sessizce geçmemesini ve log'a yalnızca gerçekten yaptıklarını yazmasını istedim. Planı onayladıktan sonra beş aşamada ilerledik: iskelet ve veritabanı, API ve testler, arayüz, Docker, belgeler. Her aşamadan sonra çıktıyı ben denedim ve onayladıktan sonra bir sonrakine geçtik.
 
-Projede Supabase'i yalnızca PostgreSQL veritabanı olarak, uygulamayı yayınlamak için ise Render'ı kullandım. Kaynak kod GitHub'da duruyor. Uygulamayı paketlemek ve yerelde denemek için Docker'dan yararlandım.
+## Kararlarım
 
----
+Spring Boot 3, Java 21 ve JdbcTemplate kullandım, çünkü Spring Boot'ta rahatım ve JdbcTemplate ile SQL kodda açıkça görünüyor. Veritabanı olarak Supabase'deki PostgreSQL'i seçtim; bilgisayarımdaki veritabanına canlı site erişemeyeceği için internette çalışan bir veritabanı gerekiyordu. Supabase'i yalnızca veritabanı olarak kullandım. Tarayıcı ona doğrudan bağlanmıyor, doğrulama ve kayıt sunucuda yapılıyor. Böylece başarı mesajı yalnızca kayıt gerçekten oluştuğunda gösterilebiliyor. Sayfa ve API tek uygulamada, arayüz ise framework olmadan düz HTML, CSS ve JavaScript ile yazıldı.
 
-## Verdiğim kararlar
+Antigravity'nin oluşturduğu paket yapısını da kendim yeniden düzenledim. Sınıfları sorumluluğa göre ayırdım: `request`, `admin`, `health`, `exception`, `config` ve filtrelerin hepsinin bulunduğu `security` paketi. Böyle daha okunaklı buldum.
 
-Backend için Spring Boot 3, Java 21 ve JdbcTemplate kullanmaya karar verdim. Spring Boot'ta diğer seçeneklerden daha rahat çalışıyorum. JdbcTemplate ile SQL sorguları kodda açıkça göründüğü için kodu anlatması ve değiştirmesi de benim için kolay oluyor.
+## Planda düzelttirdiklerim
 
-Veritabanı olarak Supabase üzerindeki PostgreSQL'i seçtim. Kendi bilgisayarımdaki bir veritabanına canlı site erişemeyeceği için internette çalışan bir veritabanına ihtiyacım vardı. Supabase'i yalnızca veritabanı olarak kullandım. Tarayıcı veritabanına doğrudan bağlanmıyor, tüm kayıtlar sunucu üzerinden yazılıyor. Böylece doğrulama kuralları sunucuda uygulanıyor ve başarı mesajı yalnızca kayıt gerçekten oluştuğunda gösteriliyor.
+Antigravity'nin ilk planını Claude ile birlikte inceledim. Genel yapısını kabul ettim ama şunları değiştirttim:
 
-Sayfayı ve API'yi tek bir uygulamada birleştirdim. Arayüzü herhangi bir framework kullanmadan, düz HTML, CSS ve JavaScript ile yazdırdım.
+- **Honeypot:** Plan, bot yakalandığında sahte bir 201 dönüyordu. Görev başarı mesajının yalnızca gerçek kayıtta gösterilmesini istediği için kayıt yazmadan 422 dönmesini istedim.
+- **Supabase güvenliği:** Tablo Supabase'in `public` şemasında olduğu için, satır düzeyinde güvenlik (RLS) kapalı kalırsa dışarıdan okunabilirdi. Migration'a RLS'yi açan satırı ekletttim.
+- **Gövde sınırı:** Plandaki ayarlar JSON gövdesini sınırlamıyordu. Bunun yerine 16 KB'ı aşan istekleri 413 ile reddeden bir filtre yazdırdım.
+- **Hız sınırı:** Yalnızca `POST /api/requests` için geçerli olsun, aksi hâlde sayfanın CSS ve JS dosyaları da sayılırdı.
+- **Yapılandırma hatası:** Plandaki `application.properties` örneğinde satır sonuna yorum yazılmıştı, bu dosya biçiminde değeri bozar. Yorumları ayrı satıra taşıttım.
+- **Doğrulama sırası:** Boşlukları temizleme ve e-postayı küçük harfe çevirme, doğrulamadan önce yapılsın ki yalnızca boşluktan oluşan bir isim geçmesin.
 
----
+## Karşılaştığım sorunlar
 
-## Mimari planı inceleyip düzelttirdiklerim
+**Testcontainers çalışmadı.** Testler Testcontainers ile yazılmıştı ama kullandığım Docker Desktop sürümünde bağlantı hatası verdi. Testleri sahte bir veritabanına (H2) taşımak istemedim. Antigravity önce Docker Desktop'ta, Docker'ı şifresiz bir ağ portuna açan bir ayarı açmamı önerdi. Açtım ama bu ayarın güvenlik riski taşıdığını ve sorunu çözmediğini fark edip kapattım. Bunun yerine gerçek bir PostgreSQL konteynerini (`postgres:16-alpine`, 5433 portu) elle başlatıp testleri ona bağladım. Kullanılmayan Testcontainers bağımlılığını ise ileride Docker sürümü güncellendiğinde kolayca geri dönebilmek adına pom.xml içinde bilerek bıraktım, silmedim. Testler artık yalnızca bu yerel konteynere bağlanıyor, Supabase'e hiç dokunmuyor.
 
-Antigravity'den önce kod yazmamasını, yalnızca bir mimari plan hazırlamasını istedim. Planın genel yapısını, yani aşamaları ve gereksinimlerle testlerin eşlenmesini yerinde buldum. Bunu Claude ile birlikte inceledim ve şu sorunları bulup düzelttirdim:
+**Dönen çark hatası.** Canlı sitede gönder butonundaki dönen işaret form boşken bile sürekli görünüyordu. Kodda bir CSS kuralı, HTML'in `hidden` özniteliğini eziyordu. Bunu canlıda ben fark ettim; otomatik testler görsel durumu ölçmediği için yakalayamamıştı. Antigravity'ye bildirdim, tek satırlık bir CSS kuralıyla düzeltildi.
 
-- Plandaki `application.properties` örneğinde değerlerin yanına `# yorum` yazılmıştı. Bu dosya biçiminde satır sonundaki yorum, yorum sayılmaz ve değerin bir parçası olur. Bu yüzden sayı okunamayacaktı. Yorumların ayrı satıra taşınmasını istedim.
-- İstek gövdesinin boyutunu sınırlamak için önerilen Tomcat ayarları JSON gövdesini sınırlamıyordu. Bunun yerine 16 KB'ı aşan istekleri 413 koduyla reddeden küçük bir filtre ve bunun için bir test yazdırdım.
-- Tablo, Supabase'in `public` şemasında oluşturuluyordu. Satır düzeyinde güvenlik (RLS) kapalı olursa Supabase'in kendi REST API'si üzerinden anon anahtarla tabloya erişilebilirdi. Bu yüzden migration dosyasına RLS'yi etkinleştiren satırın eklenmesini istedim.
-- Plan, honeypot alanı doluysa bota sahte bir 201 yanıtı dönüyordu. Görev, başarı mesajının yalnızca kayıt gerçekten oluştuğunda gösterilmesini istediği için bunu kabul etmedim. Honeypot doluysa kayıt yazılmıyor ve genel bir 422 hatası dönüyor. Alanın adını, tarayıcıların otomatik doldurmasıyla karışmaması için `website` yerine `contactValidation` yaptırdım.
-- Hız sınırını yalnızca `POST /api/requests` isteğine uygulattırdım. Aksi hâlde sayfanın CSS ve JavaScript dosyaları da sayılacak ve ziyaretçi sayfayı açarken engellenebilecekti. Sayaç, testler birbirini etkilemesin diye sıfırlanabilir olacak şekilde yazıldı.
-- Metin alanlarının boşluklarının temizlenmesi ve e-postanın küçük harfe çevrilmesi, doğrulamadan önce yapılacak şekilde düzeltildi. Böylece yalnızca boşluklardan oluşan bir isim ya da mesaj reddediliyor ve bunun için ayrı bir test var.
-- Bilinmeyen alanlar için özel bir kod yerine Jackson'ın hazır ayarını kullandırdım. Fazladan bir alan gönderilirse Türkçe bir 400 hatası dönüyor.
-- "Veritabanı erişilemezse 500 dön" testini, konteyneri durdurarak değil, repository'yi taklit edip `DataAccessException` fırlatarak yazdırdım. Bu yöntem daha basit ve daha kararlı.
-- Yönetici endpoint'i için `ADMIN_TOKEN` tanımlı değilse endpoint'in tamamen kapalı olmasını, token karşılaştırmasının `MessageDigest.isEqual` ile yapılmasını ve yanıtta `Cache-Control: no-store` başlığının bulunmasını istedim.
+## Nasıl doğruladım
 
----
-
-## Plandan ayrıldığım noktalar
-
-Testcontainers, kullandığım Docker Desktop 29 sürümünde çalışmadı. Antigravity, Testcontainers'ın Docker'a bağlanırken `BadRequestException (400)` hatası verdiğini bildirdi. Testleri H2 gibi sahte bir veritabanına taşımak yerine bunu çözmeyi tercih ettim ve gerçek bir PostgreSQL konteynerini (`postgres:16-alpine`, 5433 portu) elle başlatıp testleri ona bağladım. Dolayısıyla testlerin çalışması için bu konteynerin ayakta olması gerekiyor. Bunun komutunu README'ye yazdım. `pom.xml` içinde Testcontainers bağımlılığını silmeyip bıraktım; çünkü standart Testcontainers bağımlılık yapısını korumak ve Docker API uyumluluğu sağlandığında doğrudan Testcontainers moduna dönülebilmesini istedim.
-
-Bilgisayarımda varsayılan Java sürümü 17'ydi. Projenin gereksinimi Java 21 olduğu için ortama Microsoft OpenJDK 21 kurup derlemeyi Java 21 ile gerçekleştirdim.
-
----
-
-## Yaptığım doğrulamalar
-
-Aşağıdaki tabloyu yalnızca gerçekten yaptığım kontrollerle doldurdum.
-
-| Kontrol | Nasıl yaptım | Sonuç |
-|---|---|---|
-| Otomatik testler | `mvn test` komutunu kendim çalıştırdım. Antigravity 32 testin geçtiğini bildirmişti. | Başarılı (32 testin 32'si de hatasız geçti) |
-| Veritabanı kapalıyken uygulama | Sahte bir `DB_URL` ile başlatıp `/health` adresine `curl` attım. Uygulamanın düşmemesini ve 503 ile `DOWN` dönmesini bekledim. | Başarılı (Uygulama düşmedi, HTTP 503 DOWN döndü) |
-| Tablo ve RLS | Supabase panelinde tablonun oluştuğunu ve RLS'nin açık olduğunu gördüm. Anon anahtarla sorgulayınca satır dönmemesini bekledim. | Başarılı (RLS etkin, anon key ile 0 satır döndü) |
-| Kayıt oluşması | Formu doldurup gönderdim ve satırı Supabase'deki Table Editor'da gördüm. | Başarılı (UUID PK ile satır veritabanına yazıldı) |
-| Veritabanı hatasında başarı mesajı | Yanlış parolayla uygulamayı başlatıp formu gönderdim. Başarı mesajının çıkmamasını bekledim. | Başarılı (Başarı mesajı çıkmadı, kırmızı hata görüntülendi) |
-| Sunucu tarafı doğrulama | `curl` ile geçersiz, eksik ve fazladan alanlı istekler gönderdim. | Başarılı (Doğrulama hatalarında 422, fazla alanda 400 alındı) |
-| Büyük gövde ve honeypot | 16 KB'tan büyük bir istek ve honeypot'u dolu bir istek gönderdim. 413 ve 422 beklerken tabloya yeni satır eklenmemesini bekledim. | Başarılı (413 ve 422 alındı, veritabanı temiz kaldı) |
-| Hız sınırı (canlıda) | İki farklı ağdan arka arkaya 6 istek gönderip sınırın IP başına çalıştığını kontrol ettim. | Başarılı (6. istekte 429 Too Many Requests alındı) |
-| Statik dosyalar ve `/health` | Sayfayı birkaç kez yenileyip `/health`'i çağırdım. Hız sınırına takılmamalarını bekledim. | Başarılı (Statik dosyalar ve health etkilenmedi) |
-| Mobil görünüm | Tarayıcı geliştirici araçlarında 375 px genişlikte baktım. Yatay kaydırma olmamasını bekledim. | Başarılı (375px ekranda yatay taşma sıfır) |
-| Klavye kullanımı | Formu yalnızca Tab ve Enter ile doldurdum. Odak sırasına ve hata durumunda ilk hatalı alana odaklanmasına baktım. | Başarılı (Görünür odak halkası ve otomatik focus çalıştı) |
-| Ekran okuyucu | macOS VoiceOver / NVDA ile kontroller gerçekleştirdim. Form etiketlerinin ve bildirimlerin okunduğunu gördüm. | Başarılı (Label ilişkileri ve aria-live okundu) |
-| Docker imajı | İmajı derleyip konteynerin kök olmayan bir kullanıcıyla çalıştığını ve `/health`'in yanıt verdiğini kontrol ettim. | Başarılı (`whoami` ile `appuser` doğrulandı, /health 200 OK döndü) |
-| Canlı adres | Aynı form denemelerini canlı adreste tekrarladım ve kaydın Supabase'e düştüğünü gördüm. | Başarılı (Form canlıda 201 döndü ve Supabase'e kaydetti) |
-| Gizli bilgiler | Depoda ve git geçmişinde parola ya da bağlantı bilgisi olmadığını kontrol ettim. | Başarılı (Hiçbir şifre veya secret repoda yok) |
-
----
-
-## Yapay zekanın hataları ve benim düzeltmelerim
-
-Mimari plandaki hataları yukarıda anlattım. Kod aşamasında karşılaştığım hatalar şunlar:
-
-- **Spinner Görünürlüğü Hatası:** CSS'teki `.spinner { display: inline-block; }` kuralı HTML'deki `hidden` özniteliğini ezdiği için sayfa ilk açıldığında buton üzerinde çark sürekli dönüyordu. CSS'e `[hidden] { display: none !important; }` ekleterek düzelttim.
-- **Java Sürümü Uyumsuzluğu:** İlk aşamada yerel ortamdaki varsayılan Java 17 ile derleme denenirken Maven release hatası alındı. Ortama Microsoft OpenJDK 21 kurarak pom.xml'i Java 21'e güncellettim.
-- **Statik Dosya Testinde Karakter Uyuşmazlığı:** `index.html` için yazılan entegrasyon testinde Türkçe karakterlerin Unicode uyuşmazlığı nedeniyle test patlıyordu. Test kontrolünü ASCII güvenli karakter kümesiyle eşleştirip düzelttim.
-
----
-
-## Bilinen eksikler
-
-Hız sınırı sunucunun belleğinde tutuluyor. Uygulama birden fazla örnekte çalışırsa bu sınır yetersiz kalır.
-
-Ön yüzde, başarı mesajının yalnızca 201 yanıtında gösterilmesi için otomatik bir test yok. Bunu manuel test adımlarıyla kontrol ettim ve adımları README'ye yazdım.
-
-Veritabanı uygulama açılırken kapalıysa tablo kendiliğinden oluşmuyor. Bu durumda veritabanı ayağa kalktıktan sonra uygulamayı yeniden başlatmak gerekiyor.
-
-Testler elle başlatılan bir PostgreSQL konteynerine bağlı, çünkü Testcontainers kullandığım Docker sürümünde çalışmadı.
-
-E-posta doğrulaması basit bir düzenli ifadeyle yapılıyor ve e-posta standardının tamamını kapsamıyor. İstemci ve sunucu aynı kuralı kullanıyor.
-
-Render'ın ücretsiz planında uygulama bir süre kullanılmazsa uyuyor ve ilk istek yavaş yanıt verebiliyor.
-
----
-
-## Kodu anlama
-
-Teslimden önce kodu baştan sona okudum. Anlamadığım yerleri Antigravity'ye ve Claude'a açıklattım. Saf Vanilla JS form mantığını (`app.js`), Spring Boot `@RestControllerAdvice` ile yazılan `GlobalExceptionHandler` sınıfını ve `RateLimitFilter` akışını detaylıca inceledim. Ayrıca footer alanındaki yapay duran sloganları kaldırıp kendi imzamı ekledim (`Geliştiren: Hamza Ketenci`).
+- **Otomatik testler:** `mvn test` komutunu Java 21 ile kendi bilgisayarımda çalıştırdım, 32 testin 32'si geçti.
+- **Yerelde elle:** Veritabanı kapalıyken uygulamanın çökmeden açıldığını, gerçek Supabase'e bağlanınca tablonun oluştuğunu, RLS'nin açık olduğunu ve anon anahtarla sorgulayınca satır dönmediğini kontrol ettim. `curl` ile beş istek gönderdim: geçerli istek 201, geçersiz alanlar 422, honeypot dolu 422, fazladan alan 400, arka arkaya 6 istekte 6.'sı 429 döndü.
+- **Tarayıcıda:** Sayfayı 375 px genişlikte, klavyeyle ve hatalı ya da geçerli bilgilerle denedim.
+- **Docker ve canlı:** İmajı derleyip çalıştırdım. Canlıda ilk denemede ortam değişkenlerini yanlış yazmıştım, form hata verdi ve başarı mesajı çıkmadı; düzeltince çalıştı, kaydın Supabase'e düştüğünü gördüm. Hız sınırını canlıda da denedim. 

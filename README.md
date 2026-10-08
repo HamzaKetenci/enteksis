@@ -5,23 +5,23 @@
 ---
 
 ## Canlı Bağlantı ve Teslim Bilgileri
-- **Canlı URL:** [https://enteksis.onrender.com](https://enteksis.onrender.com) *(Render üzerine deploy edildikten sonra güncellenecektir)*
-- **Kaynak Kod Deposu:** Bu repo
-- **Teslim Commit Kimliği:** `4db0c57`
+- **Canlı URL:** [https://enteksis.onrender.com](https://enteksis.onrender.com) 
+- **Kaynak Kod Deposu:** https://github.com/HamzaKetenci/enteksis
+- **Teslim Commit Kimliği:** ``
 
-> **Not (Render Ücretsiz Plan):** Render ücretsiz planında uygulama yaklaşık 15 dakika boyunca istek almadığında uyku moduna (spin-down) geçer. Bu nedenle ilk istekte açılış süresi 30–50 saniye sürebilir (cold start). Sonraki istekler anında yanıtlanır.
+> **NOT:** Render ücretsiz planında uygulama yaklaşık 15 dakika boyunca istek almadığında uyku moduna (spin-down) geçer. Bu nedenle ilk istekte açılış süresi 30–50 saniye sürebilir (cold start). Sonraki istekler anında yanıtlanır.
 
 ---
 
 ## Proje Özeti ve Teknik Yığın
 
-Uygulama, hem ön yüzü hem de API katmanını tek bir hafif Spring Boot container'ında barındıran monolitik bir mimaridir:
+Uygulama, hem ön yüzü hem de API katmanını tek bir Spring Boot container'ında barındıran monolitik bir mimaridir:
 
-- **Çalışma Zamanı & Dil:** Java 21 (Eclipse Temurin JRE 21 Alpine)
+- **Çalışma Zamanı & Dil:** Java 21 
 - **Framework:** Spring Boot 3.3.4 (Spring Web, Bean Validation)
-- **Veritabanı Erişimi:** Spring JDBC (`JdbcTemplate`) — JPA/Hibernate kullanılmadı.
+- **Veritabanı Erişimi:** Spring JDBC (`JdbcTemplate`).
 - **Veritabanı & Migration:** PostgreSQL (Supabase Session Pooler, SSL zorunlu) + Flyway Migration
-- **Ön Yüz:** Saf HTML5, Modern CSS, Vanilla JavaScript (Hiçbir framework, dış CDN, harici font veya inline script kullanılmadı).
+- **Ön Yüz:**  HTML5, Modern CSS, Vanilla JavaScript (Hiçbir framework, dış CDN, harici font veya inline script kullanılmadı).
 - **Konteynerleştirme:** Multi-stage Dockerfile (Non-root `appuser`, `-XX:MaxRAMPercentage=75`).
 
 ---
@@ -29,7 +29,7 @@ Uygulama, hem ön yüzü hem de API katmanını tek bir hafif Spring Boot contai
 ## Mimari Kararlar ve Ödünleşimler (Trade-offs)
 
 1. **JPA Yerine Spring JDBC (`JdbcTemplate`):**
-   - *Gerekçe:* Karmaşık ORM soyutlamaları, N+1 sorgu problemleri veya Hibernate önbellek yan etkileri olmadan, doğrudan şeffaf ve parametreli SQL sorguları yazıldı. Mülakatta kodun ve SQL akışının kolayca anlatılabilmesi hedeflendi.
+   - *Gerekçe:* Karmaşık ORM soyutlamaları, N+1 sorgu problemleri veya Hibernate önbellek yan etkileri olmadan, doğrudan şeffaf ve parametreli SQL sorguları yazıldı.
 2. **Supabase Row Level Security (RLS):**
    - *Gerekçe:* Tablo Supabase üzerinde varsayılan `public` şemasında yer alır. Supabase'in istemci REST API'si üzerinden tablonun anon key ile doğrudan okunmasını veya değiştirilmesini engellemek için `ALTER TABLE service_requests ENABLE ROW LEVEL SECURITY;` uygulandı (hiçbir policy tanımlanmadı). Böylece verilere **yalnızca** sunucu tarafındaki yetkili JDBC bağlantısı erişebilir.
 3. **Bot Koruması (Honeypot) ve 422 Kararı:**
@@ -66,7 +66,7 @@ Uygulama çalışmak için aşağıdaki ortam değişkenlerine ihtiyaç duyar. G
 
 ### Adım 1: Depoyu Klonlayın ve Dizine Geçin
 ```bash
-git clone <repo-url>
+git clone https://github.com/HamzaKetenci/enteksis
 cd enteksis
 ```
 
@@ -158,11 +158,6 @@ docker run -d -p 8080:8080 \
 
 1. **Ön Yüz Uçtan Uca (E2E) Test Otomasyonu:**
    - Ön yüzün yalnızca HTTP 201'de yeşil başarı mesajı göstermesi, çift tıklama koruması ve erişilebilir odak akışı için Selenium/Cypress gibi bir E2E test otomasyon paketi dahil edilmemiştir (Spring MockMvc düzeyinde statik asset testleri yapılmıştır).
-   - **Ön Yüz Manuel Doğrulama Adımları:**
-     1. `http://localhost:8080` adresini açın.
-     2. Formu eksik/hatalı doldurup gönderin &rarr; İlgili alanın altında kırmızı hata mesajı çıktığını, ilk alana odaklanıldığını ve yazılanların silinmediğini doğrulayın.
-     3. Formu geçerli doldurup gönderin &rarr; Gönder butonunun devre dışı kalıp spinner döndüğünü, yanıt 201 geldikten sonra yeşil başarı mesajının belirdiğini ve formun sıfırlandığını doğrulayın.
-     4. Veritabanını durdurup formu gönderin &rarr; Kırmızı genel hata mesajı çıktığını ve yeşil başarı mesajının **kesinlikle gösterilmediğini** doğrulayın.
 2. **Dağıtık Ortamlarda Rate Limit:**
    - Rate limit filtresi JVM belleğinde (`ConcurrentHashMap`) tutulmaktadır. Birden fazla sunucu/instance devreye girdiğinde sayaçlar bağımsız işleyecektir. İleri aşamada Redis tabanlı merkezi bir token-bucket yapısına geçilmelidir.
 3. **Uygulama Açılışında Veritabanı Kesintisi:**

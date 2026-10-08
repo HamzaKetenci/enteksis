@@ -1,4 +1,4 @@
-package com.enteksis.config;
+package com.enteksis.security;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
